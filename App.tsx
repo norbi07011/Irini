@@ -127,7 +127,16 @@ const App: React.FC = () => {
             </section>
             <section className="py-48 bg-zinc-950 border-t border-zinc-900">
                <div className="max-w-7xl mx-auto px-4">
-                 <GoogleReviewCard rating={googleData.rating} reviews={googleData.reviews} isLoading={googleData.isLoading} onWriteReview={() => {}} language={language} t={t} />
+                 <GoogleReviewCard 
+                   rating={googleData.rating} 
+                   reviews={googleData.reviews} 
+                   isLoading={googleData.isLoading} 
+                   onWriteReview={() => {
+                     window.open('https://www.google.com/maps/place/Restaurant+Irini/@52.07532,4.2805916,21z/data=!4m16!1m7!3m6!1s0x47c5b0e074091211:0x13c8203ba4d6c277!2sSirtaki!8m2!3d52.0732918!4d4.2674365!16s%2Fg%2F1tvykyvy!3m7!1s0x47c5b10052097b33:0xee46939b90160e!8m2!3d52.0753369!4d4.2805116!9m1!1b1!16s%2Fg%2F11ms1d26zp?entry=ttu&g_ep=EgoyMDI1MTIwOS4wIKXMDSoASAFQAw%3D%3D', '_blank', 'noopener,noreferrer');
+                   }} 
+                   language={language} 
+                   t={t} 
+                 />
                </div>
             </section>
           </div>

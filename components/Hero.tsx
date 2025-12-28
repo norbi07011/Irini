@@ -19,9 +19,9 @@ const Hero: React.FC<HeroProps> = ({ onOrderClick, onAboutClick }) => {
       {/* Background Image with Overlay */}
       <div className="absolute inset-0">
         <img 
-          src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=1920" 
+          src="/okładka strony home.png" 
           alt="Authentic Greek Food"
-          className="w-full h-full object-cover opacity-60 scale-105 transition-transform duration-[20s] ease-out group-hover:scale-100"
+          className="w-full h-full object-cover opacity-70 scale-105 transition-transform duration-[20s] ease-out group-hover:scale-100"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/80 via-transparent to-zinc-950/80" />
