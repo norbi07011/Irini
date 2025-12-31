@@ -2217,196 +2217,6 @@ Weimarstraat 174, 2562 HD Den Haag`;
               </div>
             )}
 
-            {/* Edit Content Modal */}
-            {editingContent && (
-              <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-                <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-8 space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] uppercase tracking-widest text-blue-600 font-bold">{editingContent.section}</span>
-                      <h3 className="text-2xl font-serif font-bold text-gray-900">{editingContent.key.replace(/_/g, ' ')}</h3>
-                    </div>
-                    <button
-                      onClick={() => setEditingContent(null)}
-                      className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-
-                  {/* Image Upload */}
-                  <div>
-                    <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">
-                      {language === 'pl' ? 'Zdjęcie' : 'Afbeelding'}
-                    </label>
-                    <div className="flex flex-col gap-3">
-                      {/* Upload Button */}
-                      <div className="flex gap-3">
-                        <label className="flex-1 cursor-pointer">
-                          <div className={`flex items-center justify-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed transition-all ${
-                            uploadingImage 
-                              ? 'border-blue-400 bg-blue-50' 
-                              : 'border-blue-300 hover:border-blue-500 hover:bg-blue-50'
-                          }`}>
-                            {uploadingImage ? (
-                              <>
-                                <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                                <span className="text-sm text-blue-600">{language === 'pl' ? 'Przesyłanie...' : 'Uploading...'}</span>
-                              </>
-                            ) : (
-                              <>
-                                <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                <span className="text-sm text-gray-700">{language === 'pl' ? 'Wybierz zdjęcie z komputera' : 'Kies afbeelding van computer'}</span>
-                              </>
-                            )}
-                          </div>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleSiteImageUpload}
-                            disabled={uploadingImage}
-                            className="hidden"
-                          />
-                        </label>
-                      </div>
-                      
-                      {/* Or manual URL */}
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400">{language === 'pl' ? 'lub wklej URL:' : 'of plak URL:'}</span>
-                        <input
-                          type="text"
-                          value={editingContent.value_image_url || ''}
-                          onChange={(e) => setEditingContent({...editingContent, value_image_url: e.target.value})}
-                          className="flex-1 bg-white border border-blue-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:border-blue-500 outline-none"
-                          placeholder="/image.png or https://..."
-                        />
-                      </div>
-
-                      {/* Preview */}
-                      {editingContent.value_image_url && (
-                        <div className="flex items-start gap-4">
-                          <div className="rounded-xl overflow-hidden border border-blue-200 w-32 h-24 flex-shrink-0">
-                            <img 
-                              src={editingContent.value_image_url} 
-                              alt="Preview" 
-                              className="w-full h-full object-cover"
-                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setEditingContent({...editingContent, value_image_url: ''})}
-                            className="text-red-500 hover:text-red-700 text-xs underline"
-                          >
-                            {language === 'pl' ? 'Usuń zdjęcie' : 'Verwijder afbeelding'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Universal Text (if applicable) */}
-                  <div>
-                    <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">
-                      {language === 'pl' ? 'Tekst uniwersalny (EN)' : 'Universele tekst (EN)'}
-                    </label>
-                    <textarea
-                      value={editingContent.value_text || ''}
-                      onChange={(e) => setEditingContent({...editingContent, value_text: e.target.value})}
-                      className="w-full bg-white border border-blue-300 rounded-xl px-4 py-3 text-gray-900 focus:border-blue-500 outline-none resize-none"
-                      rows={2}
-                      placeholder="English / universal text"
-                    />
-                  </div>
-
-                  {/* Language-specific texts */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">🇳🇱 Nederlands</label>
-                      <textarea
-                        value={editingContent.value_text_nl || ''}
-                        onChange={(e) => setEditingContent({...editingContent, value_text_nl: e.target.value})}
-                        className="w-full bg-white border border-blue-300 rounded-xl px-4 py-3 text-gray-900 focus:border-blue-500 outline-none resize-none"
-                        rows={2}
-                        placeholder="Nederlandse tekst..."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">🇵🇱 Polski</label>
-                      <textarea
-                        value={editingContent.value_text_pl || ''}
-                        onChange={(e) => setEditingContent({...editingContent, value_text_pl: e.target.value})}
-                        className="w-full bg-white border border-blue-300 rounded-xl px-4 py-3 text-gray-900 focus:border-blue-500 outline-none resize-none"
-                        rows={2}
-                        placeholder="Tekst po polsku..."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">🇬🇷 Ελληνικά</label>
-                      <textarea
-                        value={editingContent.value_text_el || ''}
-                        onChange={(e) => setEditingContent({...editingContent, value_text_el: e.target.value})}
-                        className="w-full bg-white border border-blue-300 rounded-xl px-4 py-3 text-gray-900 focus:border-blue-500 outline-none resize-none"
-                        rows={2}
-                        placeholder="Ελληνικό κείμενο..."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">🇹🇷 Türkçe</label>
-                      <textarea
-                        value={editingContent.value_text_tr || ''}
-                        onChange={(e) => setEditingContent({...editingContent, value_text_tr: e.target.value})}
-                        className="w-full bg-white border border-blue-300 rounded-xl px-4 py-3 text-gray-900 focus:border-blue-500 outline-none resize-none"
-                        rows={2}
-                        placeholder="Türkçe metin..."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">🇦🇪 العربية</label>
-                      <textarea
-                        value={editingContent.value_text_ar || ''}
-                        onChange={(e) => setEditingContent({...editingContent, value_text_ar: e.target.value})}
-                        className="w-full bg-white border border-blue-300 rounded-xl px-4 py-3 text-gray-900 focus:border-blue-500 outline-none resize-none text-right"
-                        rows={2}
-                        dir="rtl"
-                        placeholder="...النص العربي"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">🇧🇬 Български</label>
-                      <textarea
-                        value={editingContent.value_text_bg || ''}
-                        onChange={(e) => setEditingContent({...editingContent, value_text_bg: e.target.value})}
-                        className="w-full bg-white border border-blue-300 rounded-xl px-4 py-3 text-gray-900 focus:border-blue-500 outline-none resize-none"
-                        rows={2}
-                        placeholder="Български текст..."
-                      />
-                    </div>
-                  </div>
-
-                  {/* Save Button */}
-                  <div className="flex justify-end gap-4 pt-4 border-t border-blue-100">
-                    <button
-                      onClick={() => setEditingContent(null)}
-                      className="px-6 py-3 text-gray-600 hover:text-gray-800 transition-colors"
-                    >
-                      {language === 'pl' ? 'Anuluj' : 'Annuleren'}
-                    </button>
-                    <button
-                      onClick={() => handleSaveContent(editingContent)}
-                      disabled={savingContent}
-                      className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50"
-                    >
-                      {savingContent ? '...' : (language === 'pl' ? '💾 Zapisz zmiany' : '💾 Wijzigingen opslaan')}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -3443,6 +3253,203 @@ Weimarstraat 174, 2562 HD Den Haag`;
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Site Content Modal - positioned at root level for proper fixed positioning */}
+      {editingContent && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-2 sm:p-4">
+          <div className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-4xl h-[95vh] sm:h-auto sm:max-h-[90vh] flex flex-col">
+            {/* Sticky Header */}
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100 flex-shrink-0">
+              <div>
+                <span className="text-[9px] sm:text-[10px] uppercase tracking-widest text-blue-600 font-bold">{editingContent.section}</span>
+                <h3 className="text-lg sm:text-2xl font-serif font-bold text-gray-900">{editingContent.key.replace(/_/g, ' ')}</h3>
+              </div>
+              <button
+                onClick={() => setEditingContent(null)}
+                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+
+            {/* Image Upload */}
+            <div>
+              <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">
+                {language === 'pl' ? 'Zdjęcie' : 'Afbeelding'}
+              </label>
+              <div className="flex flex-col gap-3">
+                {/* Upload Button */}
+                <div className="flex gap-3">
+                  <label className="flex-1 cursor-pointer">
+                    <div className={`flex items-center justify-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed transition-all ${
+                      uploadingImage 
+                        ? 'border-blue-400 bg-blue-50' 
+                        : 'border-blue-300 hover:border-blue-500 hover:bg-blue-50'
+                    }`}>
+                      {uploadingImage ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                          <span className="text-sm text-blue-600">{language === 'pl' ? 'Przesyłanie...' : 'Uploading...'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span className="text-sm text-gray-700">{language === 'pl' ? 'Wybierz zdjęcie z komputera' : 'Kies afbeelding van computer'}</span>
+                        </>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleSiteImageUpload}
+                      disabled={uploadingImage}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                
+                {/* Or manual URL */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <span className="text-xs text-gray-400">{language === 'pl' ? 'lub wklej URL:' : 'of plak URL:'}</span>
+                  <input
+                    type="text"
+                    value={editingContent.value_image_url || ''}
+                    onChange={(e) => setEditingContent({...editingContent, value_image_url: e.target.value})}
+                    className="flex-1 bg-white border border-blue-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:border-blue-500 outline-none"
+                    placeholder="/image.png or https://..."
+                  />
+                </div>
+
+                {/* Preview */}
+                {editingContent.value_image_url && (
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <div className="rounded-xl overflow-hidden border border-blue-200 w-24 h-18 sm:w-32 sm:h-24 flex-shrink-0">
+                      <img 
+                        src={editingContent.value_image_url} 
+                        alt="Preview" 
+                        className="w-full h-full object-cover"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEditingContent({...editingContent, value_image_url: ''})}
+                      className="text-red-500 hover:text-red-700 text-xs underline"
+                    >
+                      {language === 'pl' ? 'Usuń zdjęcie' : 'Verwijder afbeelding'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Universal Text (if applicable) */}
+            <div>
+              <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">
+                {language === 'pl' ? 'Tekst uniwersalny (EN)' : 'Universele tekst (EN)'}
+              </label>
+              <textarea
+                value={editingContent.value_text || ''}
+                onChange={(e) => setEditingContent({...editingContent, value_text: e.target.value})}
+                className="w-full bg-white border border-blue-300 rounded-xl px-4 py-3 text-gray-900 focus:border-blue-500 outline-none resize-none"
+                rows={2}
+                placeholder="English / universal text"
+              />
+            </div>
+
+            {/* Language-specific texts */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">🇳🇱 Nederlands</label>
+                <textarea
+                  value={editingContent.value_text_nl || ''}
+                  onChange={(e) => setEditingContent({...editingContent, value_text_nl: e.target.value})}
+                  className="w-full bg-white border border-blue-300 rounded-xl px-4 py-3 text-gray-900 focus:border-blue-500 outline-none resize-none"
+                  rows={2}
+                  placeholder="Nederlandse tekst..."
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">🇵🇱 Polski</label>
+                <textarea
+                  value={editingContent.value_text_pl || ''}
+                  onChange={(e) => setEditingContent({...editingContent, value_text_pl: e.target.value})}
+                  className="w-full bg-white border border-blue-300 rounded-xl px-4 py-3 text-gray-900 focus:border-blue-500 outline-none resize-none"
+                  rows={2}
+                  placeholder="Tekst po polsku..."
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">🇬🇷 Ελληνικά</label>
+                <textarea
+                  value={editingContent.value_text_el || ''}
+                  onChange={(e) => setEditingContent({...editingContent, value_text_el: e.target.value})}
+                  className="w-full bg-white border border-blue-300 rounded-xl px-4 py-3 text-gray-900 focus:border-blue-500 outline-none resize-none"
+                  rows={2}
+                  placeholder="Ελληνικό κείμενο..."
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">🇹🇷 Türkçe</label>
+                <textarea
+                  value={editingContent.value_text_tr || ''}
+                  onChange={(e) => setEditingContent({...editingContent, value_text_tr: e.target.value})}
+                  className="w-full bg-white border border-blue-300 rounded-xl px-4 py-3 text-gray-900 focus:border-blue-500 outline-none resize-none"
+                  rows={2}
+                  placeholder="Türkçe metin..."
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">🇦🇪 العربية</label>
+                <textarea
+                  value={editingContent.value_text_ar || ''}
+                  onChange={(e) => setEditingContent({...editingContent, value_text_ar: e.target.value})}
+                  className="w-full bg-white border border-blue-300 rounded-xl px-4 py-3 text-gray-900 focus:border-blue-500 outline-none resize-none text-right"
+                  rows={2}
+                  dir="rtl"
+                  placeholder="...النص العربي"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">🇧🇬 Български</label>
+                <textarea
+                  value={editingContent.value_text_bg || ''}
+                  onChange={(e) => setEditingContent({...editingContent, value_text_bg: e.target.value})}
+                  className="w-full bg-white border border-blue-300 rounded-xl px-4 py-3 text-gray-900 focus:border-blue-500 outline-none resize-none"
+                  rows={2}
+                  placeholder="Български текст..."
+                />
+              </div>
+            </div>
+
+            </div>
+            
+            {/* Sticky Footer with Save Button */}
+            <div className="flex justify-end gap-3 sm:gap-4 p-4 sm:p-6 border-t border-gray-100 bg-white flex-shrink-0">
+              <button
+                onClick={() => setEditingContent(null)}
+                className="px-4 sm:px-6 py-2.5 sm:py-3 text-gray-600 hover:text-gray-800 transition-colors text-sm sm:text-base"
+              >
+                {language === 'pl' ? 'Anuluj' : 'Annuleren'}
+              </button>
+              <button
+                onClick={() => handleSaveContent(editingContent)}
+                disabled={savingContent}
+                className="px-5 sm:px-8 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 text-sm sm:text-base"
+              >
+                {savingContent ? '...' : (language === 'pl' ? '💾 Zapisz' : '💾 Opslaan')}
               </button>
             </div>
           </div>

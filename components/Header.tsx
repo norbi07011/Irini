@@ -108,16 +108,16 @@ const Header: React.FC<HeaderProps> = ({ onCartOpen, activeView, setView }) => {
               
               {/* Dropdown Menu */}
               <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} top-full pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50`}>
-                <div className="w-56 glass border border-zinc-800/80 rounded-3xl py-3 shadow-3xl">
-                  <div className="px-4 py-2 mb-2 border-b border-white/5">
+                <div className="w-56 bg-white border border-gray-200 rounded-3xl py-3 shadow-2xl">
+                  <div className="px-4 py-2 mb-2 border-b border-gray-100">
                     <span className="text-[8px] uppercase tracking-[0.3em] font-bold text-zinc-500">Select Language</span>
                   </div>
                   {LANGUAGES.map((l) => (
                     <button
                       key={l.code}
                       onClick={() => setLanguage(l.code)}
-                      className={`w-full flex items-center justify-between px-5 py-3 text-xs hover:bg-white/10 transition-all cursor-pointer ${
-                        language === l.code ? 'text-blue-600 font-bold' : 'text-gray-700'
+                      className={`w-full flex items-center justify-between px-5 py-3 text-xs hover:bg-blue-50 transition-all cursor-pointer ${
+                        language === l.code ? 'text-blue-600 font-bold bg-blue-50' : 'text-gray-700'
                       }`}
                     >
                       <div className="flex items-center gap-3">
