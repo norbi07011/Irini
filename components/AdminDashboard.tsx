@@ -2,11 +2,11 @@
 import React, { useContext, useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { OrdersContext, LanguageContext, MenuContext, SettingsContext, DriversContext, ReservationsContext } from '../index';
 import { TRANSLATIONS, MENU_ITEMS } from '../constants';
-import { storageService, menuService, authService } from '../services/supabaseClient';
+import { storageService, menuService, authService, siteContentService, SiteContent } from '../services/supabaseClient';
 import { Order, OrderStatus, MenuItem, RestaurantSettings, Language, Reservation, ReservationStatus } from '../types';
 import AdminLogin from './AdminLogin';
 
-type AdminTab = 'orders' | 'history' | 'analytics' | 'menu' | 'reservations' | 'settings';
+type AdminTab = 'orders' | 'history' | 'analytics' | 'menu' | 'reservations' | 'settings' | 'content';
 type SortKey = 'date' | 'status' | 'amount';
 type SortOrder = 'asc' | 'desc';
 type SyncStatus = 'connected' | 'reconnecting' | 'failed' | 'offline';
@@ -96,6 +96,13 @@ const AdminDashboard: React.FC = () => {
   const [deliveryOrderId, setDeliveryOrderId] = useState<string | null>(null);
   const [estimatedDeliveryMinutes, setEstimatedDeliveryMinutes] = useState(30);
 
+  // Site Content Management State
+  const [siteContent, setSiteContent] = useState<SiteContent[]>([]);
+  const [loadingContent, setLoadingContent] = useState(false);
+  const [editingContent, setEditingContent] = useState<SiteContent | null>(null);
+  const [contentSectionFilter, setContentSectionFilter] = useState<string>('all');
+  const [savingContent, setSavingContent] = useState(false);
+
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -121,6 +128,48 @@ const AdminDashboard: React.FC = () => {
       unsubscribe();
     };
   }, []);
+
+  // Load site content when content tab is opened
+  useEffect(() => {
+    if (activeTab === 'content' && isAuthenticated) {
+      loadSiteContent();
+    }
+  }, [activeTab, isAuthenticated]);
+
+  const loadSiteContent = async () => {
+    setLoadingContent(true);
+    try {
+      const data = await siteContentService.getAll();
+      setSiteContent(data);
+    } catch (error) {
+      console.error('Error loading site content:', error);
+    } finally {
+      setLoadingContent(false);
+    }
+  };
+
+  const handleSaveContent = async (item: SiteContent) => {
+    setSavingContent(true);
+    try {
+      await siteContentService.update(item.id, {
+        value_text: item.value_text,
+        value_text_pl: item.value_text_pl,
+        value_text_nl: item.value_text_nl,
+        value_text_el: item.value_text_el,
+        value_text_tr: item.value_text_tr,
+        value_text_ar: item.value_text_ar,
+        value_text_bg: item.value_text_bg,
+        value_image_url: item.value_image_url
+      });
+      await loadSiteContent();
+      setEditingContent(null);
+    } catch (error) {
+      console.error('Error saving content:', error);
+      alert('Error saving. Please try again.');
+    } finally {
+      setSavingContent(false);
+    }
+  };
 
   // Browser Notifications State
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
@@ -151,6 +200,34 @@ const AdminDashboard: React.FC = () => {
       if (editingMenuItem) {
         setEditingMenuItem({ ...editingMenuItem, image: imageUrl });
       }
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Error uploading image. Please try again.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  // Handle site content image upload
+  const handleSiteImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !editingContent) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image too large. Maximum size is 5MB');
+      return;
+    }
+
+    setUploadingImage(true);
+
+    try {
+      const imageUrl = await storageService.uploadSiteImage(file);
+      setEditingContent({ ...editingContent, value_image_url: imageUrl });
     } catch (error) {
       console.error('Upload error:', error);
       alert('Error uploading image. Please try again.');
@@ -894,6 +971,7 @@ Weimarstraat 174, 2562 HD Den Haag`;
             { id: 'reservations', label: t.reservations, icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
             { id: 'analytics', label: t.analytics, icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2' },
             { id: 'menu', label: t.menuManagement, icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13' },
+            { id: 'content', label: language === 'pl' ? 'Treści Strony' : 'Website Content', icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z' },
             { id: 'settings', label: t.settings, icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066' }
           ].map(item => (
             <button
@@ -2033,6 +2111,302 @@ Weimarstraat 174, 2562 HD Den Haag`;
                   </div>
                 ))}
             </div>
+          </div>
+        )}
+
+        {/* Content Management Tab */}
+        {activeTab === 'content' && (
+          <div className="max-w-6xl mx-auto space-y-8 animate-reveal">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-5xl font-serif font-bold text-gray-900 mb-2">
+                  {language === 'pl' ? 'Zarządzanie Treścią' : 'Content Beheer'}
+                </h2>
+                <p className="text-zinc-500 uppercase tracking-[0.4em] text-[10px] font-bold">
+                  {language === 'pl' ? 'Zdjęcia i opisy strony' : 'Afbeeldingen en teksten'}
+                </p>
+              </div>
+              <button
+                onClick={loadSiteContent}
+                disabled={loadingContent}
+                className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                {loadingContent ? '...' : (language === 'pl' ? '🔄 Odśwież' : '🔄 Vernieuwen')}
+              </button>
+            </div>
+
+            {/* Section Filter */}
+            <div className="flex flex-wrap gap-2">
+              {['all', 'home', 'about', 'about_story', 'about_philosophy', 'about_team', 'about_gallery'].map(section => (
+                <button
+                  key={section}
+                  onClick={() => setContentSectionFilter(section)}
+                  className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all ${
+                    contentSectionFilter === section 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-white/70 border border-blue-200 text-gray-700 hover:bg-blue-50'
+                  }`}
+                >
+                  {section === 'all' ? (language === 'pl' ? 'Wszystko' : 'Alles') :
+                   section === 'home' ? 'Home' :
+                   section === 'about' ? 'O nas Hero' :
+                   section === 'about_story' ? (language === 'pl' ? 'Historia' : 'Verhaal') :
+                   section === 'about_philosophy' ? (language === 'pl' ? 'Filozofia' : 'Filosofie') :
+                   section === 'about_team' ? (language === 'pl' ? 'Zespół' : 'Team') :
+                   language === 'pl' ? 'Galeria' : 'Galerij'}
+                </button>
+              ))}
+            </div>
+
+            {loadingContent ? (
+              <div className="text-center py-20">
+                <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                <p className="text-gray-600">{language === 'pl' ? 'Ładowanie...' : 'Laden...'}</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {siteContent
+                  .filter(item => contentSectionFilter === 'all' || item.section === contentSectionFilter)
+                  .map(item => (
+                    <div key={item.id} className="glass rounded-2xl border border-blue-200 bg-white/80 p-6 space-y-4">
+                      {/* Header */}
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <span className="text-[9px] uppercase tracking-widest text-blue-600 font-bold">{item.section}</span>
+                          <h4 className="font-bold text-gray-900">{item.key.replace(/_/g, ' ')}</h4>
+                        </div>
+                        <button
+                          onClick={() => setEditingContent(item)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        >
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                      </div>
+
+                      {/* Image Preview */}
+                      {item.value_image_url && (
+                        <div className="rounded-xl overflow-hidden border border-blue-100">
+                          <img 
+                            src={item.value_image_url} 
+                            alt={item.key}
+                            className="w-full h-32 object-cover"
+                          />
+                        </div>
+                      )}
+
+                      {/* Text Preview */}
+                      {(item.value_text || item.value_text_nl || item.value_text_pl) && (
+                        <div className="text-sm text-gray-600 line-clamp-3">
+                          {item.value_text || item.value_text_nl || item.value_text_pl}
+                        </div>
+                      )}
+
+                      {/* Language indicators */}
+                      <div className="flex flex-wrap gap-1">
+                        {item.value_text_nl && <span className="text-[8px] px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full">🇳🇱 NL</span>}
+                        {item.value_text_pl && <span className="text-[8px] px-2 py-0.5 bg-red-100 text-red-700 rounded-full">🇵🇱 PL</span>}
+                        {item.value_text_el && <span className="text-[8px] px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">🇬🇷 EL</span>}
+                        {item.value_text_tr && <span className="text-[8px] px-2 py-0.5 bg-red-100 text-red-700 rounded-full">🇹🇷 TR</span>}
+                        {item.value_text_ar && <span className="text-[8px] px-2 py-0.5 bg-green-100 text-green-700 rounded-full">🇦🇪 AR</span>}
+                        {item.value_text_bg && <span className="text-[8px] px-2 py-0.5 bg-green-100 text-green-700 rounded-full">🇧🇬 BG</span>}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+
+            {/* Edit Content Modal */}
+            {editingContent && (
+              <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+                <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-8 space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] uppercase tracking-widest text-blue-600 font-bold">{editingContent.section}</span>
+                      <h3 className="text-2xl font-serif font-bold text-gray-900">{editingContent.key.replace(/_/g, ' ')}</h3>
+                    </div>
+                    <button
+                      onClick={() => setEditingContent(null)}
+                      className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Image Upload */}
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">
+                      {language === 'pl' ? 'Zdjęcie' : 'Afbeelding'}
+                    </label>
+                    <div className="flex flex-col gap-3">
+                      {/* Upload Button */}
+                      <div className="flex gap-3">
+                        <label className="flex-1 cursor-pointer">
+                          <div className={`flex items-center justify-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed transition-all ${
+                            uploadingImage 
+                              ? 'border-blue-400 bg-blue-50' 
+                              : 'border-blue-300 hover:border-blue-500 hover:bg-blue-50'
+                          }`}>
+                            {uploadingImage ? (
+                              <>
+                                <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                <span className="text-sm text-blue-600">{language === 'pl' ? 'Przesyłanie...' : 'Uploading...'}</span>
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span className="text-sm text-gray-700">{language === 'pl' ? 'Wybierz zdjęcie z komputera' : 'Kies afbeelding van computer'}</span>
+                              </>
+                            )}
+                          </div>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleSiteImageUpload}
+                            disabled={uploadingImage}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                      
+                      {/* Or manual URL */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-400">{language === 'pl' ? 'lub wklej URL:' : 'of plak URL:'}</span>
+                        <input
+                          type="text"
+                          value={editingContent.value_image_url || ''}
+                          onChange={(e) => setEditingContent({...editingContent, value_image_url: e.target.value})}
+                          className="flex-1 bg-white border border-blue-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:border-blue-500 outline-none"
+                          placeholder="/image.png or https://..."
+                        />
+                      </div>
+
+                      {/* Preview */}
+                      {editingContent.value_image_url && (
+                        <div className="flex items-start gap-4">
+                          <div className="rounded-xl overflow-hidden border border-blue-200 w-32 h-24 flex-shrink-0">
+                            <img 
+                              src={editingContent.value_image_url} 
+                              alt="Preview" 
+                              className="w-full h-full object-cover"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setEditingContent({...editingContent, value_image_url: ''})}
+                            className="text-red-500 hover:text-red-700 text-xs underline"
+                          >
+                            {language === 'pl' ? 'Usuń zdjęcie' : 'Verwijder afbeelding'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Universal Text (if applicable) */}
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">
+                      {language === 'pl' ? 'Tekst uniwersalny (EN)' : 'Universele tekst (EN)'}
+                    </label>
+                    <textarea
+                      value={editingContent.value_text || ''}
+                      onChange={(e) => setEditingContent({...editingContent, value_text: e.target.value})}
+                      className="w-full bg-white border border-blue-300 rounded-xl px-4 py-3 text-gray-900 focus:border-blue-500 outline-none resize-none"
+                      rows={2}
+                      placeholder="English / universal text"
+                    />
+                  </div>
+
+                  {/* Language-specific texts */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">🇳🇱 Nederlands</label>
+                      <textarea
+                        value={editingContent.value_text_nl || ''}
+                        onChange={(e) => setEditingContent({...editingContent, value_text_nl: e.target.value})}
+                        className="w-full bg-white border border-blue-300 rounded-xl px-4 py-3 text-gray-900 focus:border-blue-500 outline-none resize-none"
+                        rows={2}
+                        placeholder="Nederlandse tekst..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">🇵🇱 Polski</label>
+                      <textarea
+                        value={editingContent.value_text_pl || ''}
+                        onChange={(e) => setEditingContent({...editingContent, value_text_pl: e.target.value})}
+                        className="w-full bg-white border border-blue-300 rounded-xl px-4 py-3 text-gray-900 focus:border-blue-500 outline-none resize-none"
+                        rows={2}
+                        placeholder="Tekst po polsku..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">🇬🇷 Ελληνικά</label>
+                      <textarea
+                        value={editingContent.value_text_el || ''}
+                        onChange={(e) => setEditingContent({...editingContent, value_text_el: e.target.value})}
+                        className="w-full bg-white border border-blue-300 rounded-xl px-4 py-3 text-gray-900 focus:border-blue-500 outline-none resize-none"
+                        rows={2}
+                        placeholder="Ελληνικό κείμενο..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">🇹🇷 Türkçe</label>
+                      <textarea
+                        value={editingContent.value_text_tr || ''}
+                        onChange={(e) => setEditingContent({...editingContent, value_text_tr: e.target.value})}
+                        className="w-full bg-white border border-blue-300 rounded-xl px-4 py-3 text-gray-900 focus:border-blue-500 outline-none resize-none"
+                        rows={2}
+                        placeholder="Türkçe metin..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">🇦🇪 العربية</label>
+                      <textarea
+                        value={editingContent.value_text_ar || ''}
+                        onChange={(e) => setEditingContent({...editingContent, value_text_ar: e.target.value})}
+                        className="w-full bg-white border border-blue-300 rounded-xl px-4 py-3 text-gray-900 focus:border-blue-500 outline-none resize-none text-right"
+                        rows={2}
+                        dir="rtl"
+                        placeholder="...النص العربي"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-2">🇧🇬 Български</label>
+                      <textarea
+                        value={editingContent.value_text_bg || ''}
+                        onChange={(e) => setEditingContent({...editingContent, value_text_bg: e.target.value})}
+                        className="w-full bg-white border border-blue-300 rounded-xl px-4 py-3 text-gray-900 focus:border-blue-500 outline-none resize-none"
+                        rows={2}
+                        placeholder="Български текст..."
+                      />
+                    </div>
+                  </div>
+
+                  {/* Save Button */}
+                  <div className="flex justify-end gap-4 pt-4 border-t border-blue-100">
+                    <button
+                      onClick={() => setEditingContent(null)}
+                      className="px-6 py-3 text-gray-600 hover:text-gray-800 transition-colors"
+                    >
+                      {language === 'pl' ? 'Anuluj' : 'Annuleren'}
+                    </button>
+                    <button
+                      onClick={() => handleSaveContent(editingContent)}
+                      disabled={savingContent}
+                      className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50"
+                    >
+                      {savingContent ? '...' : (language === 'pl' ? '💾 Zapisz zmiany' : '💾 Wijzigingen opslaan')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

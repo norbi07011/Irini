@@ -282,6 +282,29 @@ export const storageService = {
       .remove([filePath]);
 
     if (error) throw error;
+  },
+
+  // Upload site content image (for Home/About pages)
+  async uploadSiteImage(file: File): Promise<string> {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `site/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('menu-images')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (uploadError) throw uploadError;
+
+    // Get public URL
+    const { data } = supabase.storage
+      .from('menu-images')
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
   }
 };
 
@@ -1059,5 +1082,112 @@ export const settingsService = {
   // Unsubscribe from channel
   unsubscribe(channel: ReturnType<typeof supabase.channel>) {
     supabase.removeChannel(channel);
+  }
+};
+
+// Site Content interface
+export interface SiteContent {
+  id: string;
+  section: string;
+  key: string;
+  value_text?: string;
+  value_text_pl?: string;
+  value_text_nl?: string;
+  value_text_el?: string;
+  value_text_tr?: string;
+  value_text_ar?: string;
+  value_text_bg?: string;
+  value_image_url?: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// Site Content Service - for managing images and texts on Home/About pages
+export const siteContentService = {
+  // Get all content for a section
+  async getBySection(section: string): Promise<SiteContent[]> {
+    const { data, error } = await supabase
+      .from('site_content')
+      .select('*')
+      .eq('section', section)
+      .order('sort_order', { ascending: true });
+    
+    if (error) throw error;
+    return data as SiteContent[];
+  },
+
+  // Get all content (for admin panel)
+  async getAll(): Promise<SiteContent[]> {
+    const { data, error } = await supabase
+      .from('site_content')
+      .select('*')
+      .order('section', { ascending: true })
+      .order('sort_order', { ascending: true });
+    
+    if (error) throw error;
+    return data as SiteContent[];
+  },
+
+  // Get single content item
+  async get(section: string, key: string): Promise<SiteContent | null> {
+    const { data, error } = await supabase
+      .from('site_content')
+      .select('*')
+      .eq('section', section)
+      .eq('key', key)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') throw error;
+    return data as SiteContent | null;
+  },
+
+  // Update content item
+  async update(id: string, updates: Partial<Pick<SiteContent, 'value_text' | 'value_text_pl' | 'value_text_nl' | 'value_text_el' | 'value_text_tr' | 'value_text_ar' | 'value_text_bg' | 'value_image_url'>>): Promise<SiteContent> {
+    const { data, error } = await supabase
+      .from('site_content')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as SiteContent;
+  },
+
+  // Upsert content item (create or update)
+  async upsert(section: string, key: string, values: Partial<Pick<SiteContent, 'value_text' | 'value_text_pl' | 'value_text_nl' | 'value_text_el' | 'value_text_tr' | 'value_text_ar' | 'value_text_bg' | 'value_image_url' | 'sort_order'>>): Promise<SiteContent> {
+    const { data, error } = await supabase
+      .from('site_content')
+      .upsert({
+        section,
+        key,
+        ...values,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'section,key' })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as SiteContent;
+  },
+
+  // Delete content item
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('site_content')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+  },
+
+  // Get content as key-value map for easier access
+  async getSectionAsMap(section: string): Promise<Record<string, SiteContent>> {
+    const items = await this.getBySection(section);
+    return items.reduce((acc, item) => {
+      acc[item.key] = item;
+      return acc;
+    }, {} as Record<string, SiteContent>);
   }
 };
