@@ -206,23 +206,25 @@ const OrderConfirmationView: React.FC<OrderConfirmationProps> = ({ orderId, onBa
               </div>
             </div>
 
-            {/* Step 3: Ready/Out for Delivery */}
+            {/* Step 3: Ready (pickup) or Out for Delivery */}
             <div className={`flex items-start gap-4 ${!['ready', 'delivery', 'completed'].includes(order.status) ? 'opacity-50' : ''}`}>
               <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                order.status === 'ready' || order.status === 'delivery'
+                (order.status === 'ready' && order.delivery.type === 'pickup') || order.status === 'delivery'
                   ? 'bg-blue-100 border border-blue-300 animate-pulse'
-                  : order.status === 'completed'
+                  : ['ready', 'delivery', 'completed'].includes(order.status) && order.delivery.type === 'delivery'
+                  ? 'bg-green-500/10 border border-green-500/20'
+                  : order.status === 'completed' && order.delivery.type === 'pickup'
                   ? 'bg-green-500/10 border border-green-500/20'
                   : 'bg-gray-200 border border-gray-300'
               }`}>
                 <span className={
-                  order.status === 'ready' || order.status === 'delivery'
+                  (order.status === 'ready' && order.delivery.type === 'pickup') || order.status === 'delivery'
                     ? 'text-blue-600'
-                    : order.status === 'completed'
+                    : ['ready', 'delivery', 'completed'].includes(order.status)
                     ? 'text-green-500'
                     : 'text-gray-400'
                 }>
-                  {order.status === 'completed' 
+                  {['ready', 'delivery', 'completed'].includes(order.status) && !(order.status === 'delivery')
                     ? '✓' 
                     : order.delivery.type === 'delivery' ? '🚗' : '🏪'
                   }
@@ -230,37 +232,66 @@ const OrderConfirmationView: React.FC<OrderConfirmationProps> = ({ orderId, onBa
               </div>
               <div>
                 <div className="font-bold text-gray-800">
-                  {order.status === 'delivery' 
-                    ? (language === 'pl' ? 'W drodze!' : 'Onderweg!')
-                    : order.status === 'ready'
-                    ? (order.delivery.type === 'pickup' 
+                  {order.delivery.type === 'delivery' 
+                    ? (order.status === 'delivery' 
+                      ? (language === 'pl' ? 'W drodze do Ciebie!' : 'Onderweg naar jou!')
+                      : ['ready', 'completed'].includes(order.status)
+                      ? (language === 'pl' ? '✓ W drodze' : '✓ Onderweg')
+                      : (language === 'pl' ? 'Dostawa' : 'Bezorging'))
+                    : (order.status === 'ready'
                       ? (language === 'pl' ? 'Gotowe do odbioru!' : 'Klaar voor afhalen!')
-                      : (language === 'pl' ? 'W drodze do Ciebie!' : 'Onderweg naar jou!'))
-                    : order.status === 'completed'
-                    ? (language === 'pl' ? '✓ Dostarczone' : '✓ Afgeleverd')
-                    : (order.delivery.type === 'delivery' 
-                      ? (language === 'pl' ? 'Dostawa' : 'Bezorging')
+                      : order.status === 'completed'
+                      ? (language === 'pl' ? '✓ Gotowe' : '✓ Klaar')
                       : (language === 'pl' ? 'Odbiór osobisty' : 'Afhalen'))
                   }
                 </div>
                 <div className="text-sm text-gray-600">
-                  {order.status === 'completed'
-                    ? (language === 'pl' ? 'Smacznego!' : 'Eet smakelijk!')
-                    : order.status === 'delivery'
-                    ? (order.estimatedDeliveryTime
-                      ? (language === 'pl' 
-                        ? `Przybędzie około: ${new Date(order.estimatedDeliveryTime).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}`
-                        : `Aankomst rond: ${new Date(order.estimatedDeliveryTime).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}`)
-                      : (language === 'pl' ? `Za ~${Math.max(5, estimatedTime - 30)} min` : `Over ~${Math.max(5, estimatedTime - 30)} min`))
-                    : order.status === 'ready'
-                    ? (order.delivery.type === 'pickup' 
-                      ? (language === 'pl' ? 'Możesz odebrać!' : 'Kan worden opgehaald!')
-                      : (order.estimatedDeliveryTime
+                  {order.delivery.type === 'delivery'
+                    ? (order.status === 'delivery'
+                      ? (order.estimatedDeliveryTime
                         ? (language === 'pl' 
                           ? `Przybędzie około: ${new Date(order.estimatedDeliveryTime).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}`
                           : `Aankomst rond: ${new Date(order.estimatedDeliveryTime).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}`)
-                        : (language === 'pl' ? 'Kurier już jedzie!' : 'Bezorger is onderweg!')))
-                    : `${t.estimatedTime}: ~${formattedTime}`
+                        : (language === 'pl' ? 'Kurier już jedzie!' : 'Bezorger is onderweg!'))
+                      : ['ready', 'completed'].includes(order.status)
+                      ? (language === 'pl' ? 'Zrealizowano' : 'Voltooid')
+                      : `${t.estimatedTime}: ~${formattedTime}`)
+                    : (order.status === 'ready'
+                      ? (language === 'pl' ? 'Możesz odebrać!' : 'Kan worden opgehaald!')
+                      : order.status === 'completed'
+                      ? (language === 'pl' ? 'Odebrano' : 'Opgehaald')
+                      : `${t.estimatedTime}: ~${formattedTime}`)
+                  }
+                </div>
+              </div>
+            </div>
+
+            {/* Step 4: Completed/Delivered */}
+            <div className={`flex items-start gap-4 ${order.status !== 'completed' ? 'opacity-50' : ''}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                order.status === 'completed'
+                  ? 'bg-green-500/10 border border-green-500/20'
+                  : 'bg-gray-200 border border-gray-300'
+              }`}>
+                <span className={order.status === 'completed' ? 'text-green-500' : 'text-gray-400'}>
+                  {order.status === 'completed' ? '✓' : '🍽️'}
+                </span>
+              </div>
+              <div>
+                <div className="font-bold text-gray-800">
+                  {order.status === 'completed'
+                    ? (order.delivery.type === 'delivery'
+                      ? (language === 'pl' ? '✓ Dostarczone!' : '✓ Afgeleverd!')
+                      : (language === 'pl' ? '✓ Odebrane!' : '✓ Opgehaald!'))
+                    : (order.delivery.type === 'delivery'
+                      ? (language === 'pl' ? 'Dostarczone' : 'Afgeleverd')
+                      : (language === 'pl' ? 'Odebrane' : 'Opgehaald'))
+                  }
+                </div>
+                <div className="text-sm text-gray-600">
+                  {order.status === 'completed'
+                    ? (language === 'pl' ? 'Smacznego! 🎉' : 'Eet smakelijk! 🎉')
+                    : (language === 'pl' ? 'Oczekuje' : 'Wachten')
                   }
                 </div>
               </div>
